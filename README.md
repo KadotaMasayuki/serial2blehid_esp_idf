@@ -1,0 +1,2 @@
+# serial2blehid_esp_idf
+ESP32-XXがUART経由で受信した文字を、キーボードデバイスとしてBLE-HID経由で送信する
