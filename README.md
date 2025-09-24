@@ -25,3 +25,13 @@ NimBLE版。
 NimBLE版。
 さらに、日本語キーボード配列を追加し、基板の `Boot` ボタンを押すことで、文字コード 0x20 から 0x7e までを1文字ずつ順にBLE-HID送信するもの。
 
+## serial2blehid_nimble_tc101a
+
+NimBLE版。
+さらに、機能追加し、Bluedroid版の `TC-101A` との通信と同等の機能とした。
+
+## serial2blehid_nimble_wifi
+NimBLE版。
+さらに、WiFiで、通信速度、受信バッファサイズ、トリガー時に送出するコマンド文字列、受信時の終端文字列、受信した終端文字列を置換する文字列、を変更できるようにした。
+
+
