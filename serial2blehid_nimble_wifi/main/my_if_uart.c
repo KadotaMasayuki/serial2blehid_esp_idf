@@ -30,8 +30,8 @@
 #define MY_IF_UART_LED_SCROLLLOCK_PIN_GPIO (-1)
 #define MY_IF_UART_LED_COMPOSE_PIN_GPIO (-1)
 #define MY_IF_UART_LED_KANA_PIN_GPIO (-1)
-#define MY_IF_UART_TRIGGER_PIN_GPIO (5)
-//#define MY_IF_UART_TRIGGER_PIN_GPIO (9)  // 9 is Boot Swith at Xiao-ESP32C3
+// #define MY_IF_UART_TRIGGER_PIN_GPIO (5)
+#define MY_IF_UART_TRIGGER_PIN_GPIO (9)  // 9 is Boot Swith at Xiao-ESP32C3
 #define MY_IF_UART_RXD_PIN_GPIO (3)
 #define MY_IF_UART_TXD_PIN_GPIO (4)
 #define MY_IF_UART_RTS_PIN_GPIO (UART_PIN_NO_CHANGE)
@@ -599,18 +599,20 @@ void my_if_uart_task(void *arg) {
         if (lvl0 != lvl1) {
             DEBUGPRINT("Trigger Level Changed = %d -> %d", lvl0, lvl1);
         }
-        if (lvl0 == 0 && lvl1 == 1) {
-            if (my_if_uart_request_command_len > 0) {
-                // リクエストコマンドがある場合はここでonし、通信終了時にoffする。
-                on_communication = true;
-            } else {
-                // リクエストコマンドがない場合は、通信状態を切り替える
-                on_communication = !on_communication;
+        // トリガを解釈して通信を行う
+        // BLE-HID送信中にトリガを解釈しないよう、セマフォを取得してから解釈する
+        if (xSemaphoreTake(my_if_uart_buffer_semaphore, (TickType_t)10) ==
+            pdTRUE) {
+            if (lvl0 == 0 && lvl1 == 1) {
+                if (my_if_uart_request_command_len > 0) {
+                    // リクエストコマンドがある場合はここでonし、通信終了時にoffする。
+                    on_communication = true;
+                } else {
+                    // リクエストコマンドがない場合は、通信状態を切り替える
+                    on_communication = !on_communication;
+                }
             }
-        }
-        if (on_communication) {
-            if (xSemaphoreTake(my_if_uart_buffer_semaphore, (TickType_t)10) ==
-                pdTRUE) {
+            if (on_communication) {
                 ESP_LOGI(MY_IF_UART_TAG, "Triggered L->H");
                 // リングバッファをクリアしておく
                 my_ring_buffer_reset(&rb);
@@ -618,7 +620,7 @@ void my_if_uart_task(void *arg) {
                 uart_flush(MY_IF_UART_PORT_NUM);
 #if MY_IF_UART_NO_UART == 0  // UART接続部分
                 ESP_LOGI(MY_IF_UART_TAG, "Process UART");
-                // データリクエストコマンドがあれば送信。
+                // データリクエストコマンドがあればここで送信。
                 if (my_if_uart_request_command_len > 0) {
                     // 返り値は送信サイズと等しい・・はず
                     int wrote_size = uart_write_bytes(
@@ -762,15 +764,18 @@ void my_if_uart_task(void *arg) {
                 // セマフォを返却する
                 xSemaphoreGive(my_if_uart_buffer_semaphore);
                 // リクエストコマンド送信後は、ちょっと多めに待機し、通信状態をOFFにする
+                // リクエストコマンドが無い場合はONのまま
                 if (my_if_uart_request_command_len > 0) {
                     vTaskDelay(300 / portTICK_PERIOD_MS);
                     on_communication = false;
                 }
             } else {
-                ESP_LOGI(MY_IF_UART_TAG,
-                         "Triggered. but can not take semaphore.");
-            }  // xSemaphoreTake
-        }      // on communication
+                // セマフォを返却する
+                xSemaphoreGive(my_if_uart_buffer_semaphore);
+            }  // on communication
+        } else {
+            ESP_LOGI(MY_IF_UART_TAG, "can not take semaphore");
+        }  // xSemaphoreTake
         // トリガーピンの履歴を更新する
         lvl0 = lvl1;
     }  // while(1)
