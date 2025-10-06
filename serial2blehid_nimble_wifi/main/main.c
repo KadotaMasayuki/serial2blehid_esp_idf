@@ -125,19 +125,15 @@ void app_main(void) {
                 k = KEYCODE_TO_HIDCODE(c);
                 m = KEYCODE_TO_HIDMASK(c);
                 if (k != 0) {
-                    // press -- まずはShiftキーを押してから文字キーを押す
+                    // press
                     if (m > 0) {
-                        hid_keyboard_change_key(HID_KEY_LEFT_SHIFT, true);
-                        vTaskDelay(50 / portTICK_PERIOD_MS);
+                        hid_keyboard_change_keycombination_single(HID_KEY_LEFT_SHIFT, k, true);
+                    } else {
+                        hid_keyboard_change_keycombination_single(0, k, true);
                     }
-                    hid_keyboard_change_key(k, true);
                     vTaskDelay(50 / portTICK_PERIOD_MS);
-                    // release -- まずは文字キーを離してからShiftキーを離す
-                    hid_keyboard_change_key(k, false);
-                    if (m > 0) {
-                        vTaskDelay(50 / portTICK_PERIOD_MS);
-                        hid_keyboard_change_key(HID_KEY_LEFT_SHIFT, false);
-                    }
+                    // release
+                    hid_keyboard_change_keycombination_single(0, 0, false);
                     vTaskDelay(50 / portTICK_PERIOD_MS);
                 }
                 i++;

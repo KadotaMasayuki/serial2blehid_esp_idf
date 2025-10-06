@@ -3,6 +3,7 @@
 #define H_HID_FUNC_
 
 #include "host/ble_gap.h"
+#include "gatt_svr.h"
 
 extern void hid_clean_vars(struct ble_gap_conn_desc *desc);
 extern void hid_set_disconnected();
@@ -14,6 +15,9 @@ extern uint8_t hid_battery_level_get(void);
 
 extern int hid_battery_level_set(uint8_t level);
 extern int hid_keyboard_change_key(uint8_t key, bool pressed);
+extern int hid_keyboard_change_keycombination_multi(uint8_t m, uint8_t keys[HIDD_LE_REPORT_KB_IN_SIZE - 2], bool pressed);
+extern int hid_keyboard_change_keycombination_single(uint8_t m, uint8_t key, bool pressed);
+
 extern int hid_cc_change_key(int key, bool pressed);
 extern int hid_mouse_change_key(int cmd, int8_t move_x, int8_t move_y, bool pressed);
 extern int hid_leds_write(struct os_mbuf *buf);
